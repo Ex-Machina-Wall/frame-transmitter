@@ -40,22 +40,39 @@ class WebsocketTransmitter:
         while self._running:
             self.logger.debug("Starting websocket task")
             asyncio.run(self._websocket_task())
-            self.logger.warning("Websocket task died")
+            self.logger.debug("Websocket task ended")
             sleep(1)
 
     async def _websocket_task(self):
         async with websockets.connect(uri=self.destination_uri) as websocket:
+            value = await websocket.recv()
+            print(value)
             logger = logging.getLogger(self.__class__.__name__)
             logger.info("Started new websocket")
             while True:
                 try:
                     if self._data_frame:
                         await websocket.send(self._data_frame)
+                        await websocket.recv()
                         self._data_frame = None
-                    await asyncio.sleep(1 / 40)
+                    # await asyncio.sleep(1 / 40)
                 except Exception as e:
                     logging.getLogger(self.__class__.__name__).error(e)
                     await asyncio.sleep(2)
                     break
                 if not self._running:
                     return
+
+
+def main():
+    from decouple import config
+    transmitter = WebsocketTransmitter(destination_uri=config("DESTINATION_URI"))
+    transmitter.start()
+    transmitter.set_latest_bytes("hello".encode("utf-8"))
+    sleep(1)
+
+    transmitter.stop()
+
+
+if __name__ == "__main__":
+    main()
