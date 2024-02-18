@@ -3,20 +3,21 @@ import numpy as np
 import struct
 
 
-def _get_payload(color_list) -> bytes:
+def _get_payload(pid_gain: int, color_list: list) -> bytes:
     string_format = "@" + "".join(["B" for _ in range((NUM_PIXELS * 3) + 1)])
 
     led_rgb_list = list()
     for r, g, b in color_list:
         led_rgb_list += [r, g, b]
-    args = [30] + led_rgb_list
+    args = [pid_gain] + led_rgb_list
     payload = struct.pack(string_format, *args)
     return payload
 
 
 class Frame:
-    def __init__(self, np_frame: np.array):
+    def __init__(self, pid_gain: int, np_frame: np.array):
         self.np_frame = np.clip(np_frame.astype(int), 0, 255)
+        self.pid_gain = pid_gain
 
     def get_bytes(self) -> bytes:
         pixels = [(0, 0, 0) for _ in range(NUM_PIXELS)]
@@ -26,5 +27,5 @@ class Frame:
                     pixel = self.np_frame[y, x]
                     pixel_number = MAPPING[y][x]
                     pixels[pixel_number] = pixel[:3]
-        frame_data = _get_payload(color_list=pixels)
+        frame_data = _get_payload(pid_gain=self.pid_gain, color_list=pixels)
         return frame_data

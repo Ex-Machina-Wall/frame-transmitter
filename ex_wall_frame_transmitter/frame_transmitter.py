@@ -16,8 +16,8 @@ class FrameTransmitter:
     def stop(self):
         self._websocket_handler.stop()
 
-    def send_numpy_frame(self, np_frame: np.array) -> None:
-        frame = Frame(np_frame=np_frame)
+    def send_numpy_frame(self, pid_gain: int, np_frame: np.array) -> None:
+        frame = Frame(pid_gain=pid_gain, np_frame=np_frame)
         data_frame = frame.get_bytes()
         self._websocket_handler.set_latest_bytes(data_frame=data_frame)
 
@@ -34,8 +34,8 @@ def main():
     fake_frame = np.zeros((HEIGHT, WIDTH, 3), dtype=int)
     for h in range(HEIGHT):
         for w in range(WIDTH):
-            fake_frame[h, w] = [0, 0, 0]
-    frame_transmitter.send_numpy_frame(np_frame=fake_frame)
+            fake_frame[h, w] = [255, 0, 0]
+    frame_transmitter.send_numpy_frame(pid_gain=30, np_frame=fake_frame)
     time.sleep(1)
     frame_transmitter.stop()
 
