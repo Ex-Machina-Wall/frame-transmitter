@@ -1,3 +1,5 @@
+import struct
+
 import websockets
 from time import sleep
 import asyncio
@@ -53,7 +55,9 @@ class WebsocketTransmitter:
                 try:
                     if self._data_frame:
                         await websocket.send(self._data_frame)
-                        await websocket.recv()
+                        value = await websocket.recv()
+                        logger.debug(f"Message received from server: {struct.unpack('B', value)[0]}")
+                        # print(await websocket.recv())
                         self._data_frame = None
                     # await asyncio.sleep(1 / 40)
                 except Exception as e:
@@ -66,11 +70,15 @@ class WebsocketTransmitter:
 
 def main():
     from decouple import config
+    import struct
     transmitter = WebsocketTransmitter(destination_uri=config("DESTINATION_URI"))
     transmitter.start()
-    transmitter.set_latest_bytes("hello".encode("utf-8"))
-    sleep(1)
-
+    for i in range(255):
+        # Pack int i into an uint_8 struct
+        transmitter.set_latest_bytes(data_frame=struct.pack("B", i))
+        # transmitter.set_latest_bytes(struct.pack(""))
+        # sleep(0.1)
+    sleep(10)
     transmitter.stop()
 
 
