@@ -1,3 +1,6 @@
+import struct
+import time
+
 import websockets
 from time import sleep
 import asyncio
@@ -40,22 +43,53 @@ class WebsocketTransmitter:
         while self._running:
             self.logger.debug("Starting websocket task")
             asyncio.run(self._websocket_task())
-            self.logger.warning("Websocket task died")
+            self.logger.debug("Websocket task ended")
             sleep(1)
 
     async def _websocket_task(self):
-        async with websockets.connect(uri=self.destination_uri) as websocket:
-            logger = logging.getLogger(self.__class__.__name__)
-            logger.info("Started new websocket")
+        # 1 year in seconds
+        ping_interval = 60*24*365
+        async with websockets.connect(uri=self.destination_uri, ping_interval=ping_interval) as websocket:
+            self.logger.info("Started new websocket")
+
+            # read the first message from the server
+            value = await websocket.recv()
+            self.logger.debug(value)
+
             while True:
                 try:
                     if self._data_frame:
+                        # Send the frame
                         await websocket.send(self._data_frame)
+                        # Wait for the handshake back from the server
+                        await websocket.recv()
                         self._data_frame = None
-                    await asyncio.sleep(1 / 40)
+
+                    # Sleep 0 to let asyncio do its magic
+                    await asyncio.sleep(0)
                 except Exception as e:
                     logging.getLogger(self.__class__.__name__).error(e)
                     await asyncio.sleep(2)
                     break
                 if not self._running:
                     return
+
+
+def main():
+    from decouple import config
+    import struct
+    logging.basicConfig(level=logging.DEBUG)
+    transmitter = WebsocketTransmitter(destination_uri=config("DESTINATION_URI"))
+    transmitter.start()
+    while True:
+        for i in range(255):
+            # Pack int i into an uint_8 struct
+            transmitter.set_latest_bytes(data_frame=struct.pack("B", i))
+            # transmitter.set_latest_bytes(struct.pack(""))
+            sleep(0.1)
+    sleep(10)
+    transmitter.stop()
+
+
+if __name__ == "__main__":
+    main()
