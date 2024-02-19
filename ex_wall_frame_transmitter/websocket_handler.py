@@ -1,6 +1,3 @@
-import struct
-import time
-
 import websockets
 from time import sleep
 import asyncio
@@ -83,12 +80,7 @@ def main():
     transmitter.start()
     while True:
         for i in range(255):
-            # Pack int i into an uint_8 struct
             transmitter.set_latest_bytes(data_frame=struct.pack("B", i))
-            # transmitter.set_latest_bytes(struct.pack(""))
-            sleep(0.1)
-    sleep(10)
-    transmitter.stop()
 
 
 if __name__ == "__main__":
