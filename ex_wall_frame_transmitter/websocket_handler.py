@@ -16,7 +16,6 @@ class WebsocketTransmitter:
         self._data_frame: Union[bytes, None] = b""
         self._running = False
         self._thread: Union[Thread, None] = None
-        self.duration = 0
 
     def start(self):
         self._running = True
@@ -51,24 +50,22 @@ class WebsocketTransmitter:
         # 1 year in seconds
         ping_interval = 60*24*365
         async with websockets.connect(uri=self.destination_uri, ping_interval=ping_interval) as websocket:
+            self.logger.info("Started new websocket")
+
+            # read the first message from the server
             value = await websocket.recv()
-            print(value)
-            logger = logging.getLogger(self.__class__.__name__)
-            logger.info("Started new websocket")
+            self.logger.debug(value)
+
             while True:
                 try:
                     if self._data_frame:
-                        old_time = time.perf_counter()
+                        # Send the frame
                         await websocket.send(self._data_frame)
-                        value = await websocket.recv()
-                        new_time = time.perf_counter()
-                        this_duration = new_time - old_time
-                        self.duration = self.duration * 0.9 + (this_duration * 0.1)
-                        # value = struct.unpack('B', value)[0]
-                        # logger.debug(f"Hand Shake received from server: {value}")
-                        logger.critical(f"This duration: {this_duration} | Average duration: {self.duration}")
-                        # print(await websocket.recv())
+                        # Wait for the handshake back from the server
+                        await websocket.recv()
                         self._data_frame = None
+
+                    # Sleep 0 to let asyncio do its magic
                     await asyncio.sleep(0)
                 except Exception as e:
                     logging.getLogger(self.__class__.__name__).error(e)
