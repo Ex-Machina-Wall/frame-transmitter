@@ -59,11 +59,11 @@ class WebsocketTransmitter:
                         # Send the frame
                         await websocket.send(self._data_frame)
                         # Wait for the handshake back from the server
-                        await websocket.recv()
+                        # await websocket.recv()
                         self._data_frame = None
 
                     # Sleep 0 to let asyncio do its magic
-                    await asyncio.sleep(0)
+                    await asyncio.sleep(1/30)
                 except Exception as e:
                     logging.getLogger(self.__class__.__name__).error(e)
                     await asyncio.sleep(2)
